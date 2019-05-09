@@ -1,0 +1,12 @@
+TimeOfDay weatherDate = TimeOfDay.fromDateTime(DateTime.parse(wm.time));
+      if (toDouble(weatherDate) > toDouble(now)) {
+        if (index < 5) {
+          final listItem = RadialListItemViewModel(
+            icon: new AssetImage('assets/ic_rain.png'),
+            title: weatherDate.hour.toString()+":"+weatherDate.minute.toString(),
+            subtitle: wm.description,
+          );
+          ++index;
+          return listItem;
+        }
+      }

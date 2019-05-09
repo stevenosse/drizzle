@@ -1,18 +1,15 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import './forecast/weekdrawer.dart';
 import './forecast/forecastappbar.dart';
 import './widgets/sliding_drawer.dart';
-import './forecast/Weather.dart';
 import './forecast/forecast.dart';
 import './forecast/forecast_list.dart';
 import './forecast/sliding_radial_list.dart';
 import './widgets/modal.dart';
 import './widgets/spinner_city.dart';
-import 'env.dart';
+import 'package:drizzle/network/model/model.dart';
+import 'package:http/http.dart' as http;
+import 'package:drizzle/network/model/weather_repo.dart';
 
 void main() {
   runApp(MyApp());
@@ -20,6 +17,9 @@ void main() {
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+  final WeatherRepo weatherRepo = new WeatherRepo(client: http.Client());
+  MyApp({Key key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -28,12 +28,38 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      //home: MyHomePage()
+      home: FutureBuilder<List<WeatherModel>>(
+        future: weatherRepo.updateWeather("Yaoundé"),
+        builder: (BuildContext context, snapshot) {
+          if (snapshot.hasData) {
+            return MyHomePage(data: weatherRepo.getWeatherData());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text("Nous n'avons pas pu charger les données"),
+            );
+          }
+
+          return Stack(
+            children: <Widget>[
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[CircularProgressIndicator()],
+                ),
+              )
+            ],
+          );
+        },
+      ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  final List<WeatherModel> data;
+  MyHomePage({this.data});
+
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
@@ -44,6 +70,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   final week = [];
   final List days = new List();
   Modal modal;
+  List<WeatherModel> data;
 
   String selectedDay;
   String selectedCity;
@@ -71,18 +98,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     selectedCity = modal.seletedItem.toString();
   }
 
-  Future<Weather> getWeatherData(String city) async {
-    final String url = Env.API_URL+"?q="+city+"&appid="+Env.MAP_API_KEY;
-    var response = await http
-        .get(Uri.encodeFull(url), headers: {"Accept": "application/json"});
-
-    print(response.body);
-  }
-
   @override
   void initState() {
     this._initData();
     super.initState();
+    this.data = widget.data;
     openableController = new OpenableController(
         vsync: this, openDuration: Duration(milliseconds: 250))
       ..addListener(() => setState(() => {}));
@@ -98,6 +118,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         body: new Stack(children: <Widget>[
       Forecast(
         radialList: forecastRadialList,
+        data: data,
         slidingListController: slidingController,
       ),
       Positioned(
@@ -114,15 +135,16 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 modal: modal,
                 onCitySelected: (String city) {
                   if (selectedCity != city) {
-                    setState(() {
-                      selectedCity = city;
+                    var wr = new WeatherRepo(client: http.Client())
+                        .updateWeather(city);
+                    wr.then((value) {
+                      setState(() {
+                        selectedCity = city;
+                        data = value;
+                      });
                     });
                   }
                 })),
-      ),
-      RaisedButton(
-        child: Text("clic"),
-        onPressed: () => getWeatherData(selectedCity),
       ),
       SlidingDrawer(
         openableController: openableController,

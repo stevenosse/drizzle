@@ -22,6 +22,7 @@ dependencies:
   spritewidget: 0.9.15
   notifier: 
   http:
+  json_annotation: ^0.2.3
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.2
@@ -30,6 +31,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  json_serializable: ^0.5.0
+  build_runner:
 
 
 # For information on the generic Dart part of this file, see the

@@ -3,31 +3,46 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import './radial_position.dart';
+import 'package:drizzle/network/model/model.dart';
 
 class SlidingRadialList extends StatelessWidget {
+  final weatherData;
   final RadialListViewModel radialList;
   final SlidingRadialListController controller;
 
-  SlidingRadialList({
-    this.radialList,
-    this.controller,
-  });
+  SlidingRadialList({this.radialList, this.controller, this.weatherData});
 
   List<Widget> _radialListItems() {
     int index = 0;
     return radialList.items.map((RadialListItemViewModel viewModel) {
       final listItem = _radialListItem(
-        viewModel,
-        controller.getItemAngle(index),
-        controller.getItemOpacity(index),
-      );
+          controller.getItemAngle(index),
+          controller.getItemOpacity(index), 
+          weatherData[index],
+          index == 0  
+        );
       ++index;
       return listItem;
     }).toList();
   }
 
+  AssetImage _findIcon(String desc){
+    switch(desc.toLowerCase()){
+      case 'sunny': return new AssetImage('assets/ic_sunny.png');
+      case 'light rain': return new AssetImage('assets/ic_rain.png');
+      case 'broken clouds': return new AssetImage('assets/ic_cloudy.png');
+      case 'scattered clouds': return new AssetImage('assets/ic_cloudy.png');
+      case 'overcast clouds': return new AssetImage('assets/ic_cloudy.png');
+      default: return new AssetImage('assets/ic_sunny.png');
+    }
+  }
+
   Widget _radialListItem(
-      RadialListItemViewModel viewModel, double angle, double opacity) {
+      double angle, double opacity, WeatherModel weatherModel, bool isSelected) {
+        TimeOfDay time = TimeOfDay.fromDateTime(DateTime.parse(weatherModel.time));
+        String weatherHour = time.hour < 10 ? "0"+time.hour.toString() : time.hour.toString();
+        String weatherMinutes = time.minute < 10 ? "0"+time.minute.toString() : time.minute.toString();
+        String weatherTime = weatherHour+":"+weatherMinutes;
     return new Transform(
       transform: new Matrix4.translationValues(
         40.0,
@@ -40,7 +55,12 @@ class SlidingRadialList extends StatelessWidget {
         child: new Opacity(
           opacity: opacity,
           child: new RadialListItem(
-            listItem: viewModel,
+            listItem: RadialListItemViewModel(
+              icon: _findIcon(weatherModel.description),
+              title: weatherTime,
+              isSelected: isSelected,
+              subtitle: weatherModel.description,
+            ),
           ),
         ),
       ),
